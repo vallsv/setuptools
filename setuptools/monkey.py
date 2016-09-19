@@ -115,16 +115,14 @@ def _patch_distribution_metadata_write_pkg_info():
     )
 
 
-def patch_func(replacement, original):
+def patch_func(original_object, original_attribute_name, replacement):
     # first set the 'unpatched' attribute on the replacement to
     # point to the original.
+    original = getattr(original_object, original_attribute_name)
     vars(replacement).setdefault('unpatched', original)
 
-    # next resolve the module in which the original func resides
-    target_mod = import_module(original.__module__)
-
-    # finally replace the function in the original module
-    setattr(target_mod, original.__name__, replacement)
+    # finally replace the function in the original object
+    setattr(original_object, original_attribute_name, replacement)
 
 
 def get_unpatched_function(candidate):
@@ -157,19 +155,19 @@ def patch_for_msvc_specialized_compiler():
 
     try:
         # Patch distutils.msvc9compiler
-        patch_func(msvc.msvc9_find_vcvarsall, msvc9compiler.find_vcvarsall)
-        patch_func(msvc.msvc9_query_vcvarsall, msvc9compiler.query_vcvarsall)
+        patch_func(msvc9compiler, "find_vcvarsall", msvc.msvc9_find_vcvarsall)
+        patch_func(msvc9compiler, "query_vcvarsall", msvc.msvc9_query_vcvarsall)
     except NameError:
         pass
 
     try:
         # Patch distutils._msvccompiler._get_vc_env
-        patch_func(msvc.msvc14_get_vc_env, msvc14compiler._get_vc_env)
+        patch_func(msvc14compiler, "_get_vc_env", msvc.msvc14_get_vc_env)
     except NameError:
         pass
 
     try:
         # Patch distutils._msvccompiler.gen_lib_options for Numpy
-        patch_func(msvc.msvc14_gen_lib_options, msvc14compiler.gen_lib_options)
+        patch_func(msvc14compiler, "gen_lib_options", msvc.msvc14_gen_lib_options)
     except NameError:
         pass
